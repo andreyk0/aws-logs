@@ -164,12 +164,19 @@ tailAWSLogs App{..} = do
                                     let endTs = ts + (fromInteger . toInteger) (delaySecs * 1000 `div` 2)
                                     latestTs' <- processResults $ fle & (fleStartTime .~ Just ts) -- start from latest event ts
                                                                 . (fleEndTime .~ Just endTs) -- don't go all the way to the end, to minimize skips
-                                    followResultsSince latestTs' -- keep searching
+                                    let nextTs = if latestTs' > 0
+                                                 then latestTs' + 1 -- +1 to avoid repeating events
+                                                 else ts
+
+                                    followResultsSince nextTs -- keep searching
 
     latestTs <- processResults fle
 
     if appFollow
-    then followResultsSince latestTs
+         -- this may skip some events that had same timestamp but haven't
+         -- synced up yet, when we follow we give it a bit of a buffer time
+         -- but 1st time is lossy
+    then followResultsSince (latestTs + 1)
     else return ()
 
 
