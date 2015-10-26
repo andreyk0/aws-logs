@@ -162,13 +162,11 @@ tailAWSLogs App{..} = do
 
          followResultsSince ts = do liftIO $ CC.threadDelay $ delaySecs * 1000000
                                     let endTs = ts + (fromInteger . toInteger) (delaySecs * 1000 `div` 2)
-                                    latestTs' <- processResults $ fle & (fleStartTime .~ Just ts) -- start from latest event ts
-                                                                . (fleEndTime .~ Just endTs) -- don't go all the way to the end, to minimize skips
-                                    let nextTs = if latestTs' > 0
-                                                 then latestTs' + 1 -- +1 to avoid repeating events
-                                                 else ts
+                                    liftIO $ hPutStrLn stderr $ "Searching for more events [" <> formatTimestamp ts <> " .. " <> formatTimestamp endTs <> "]"
+                                    _ <- processResults $ fle & (fleStartTime .~ Just ts) -- start from latest event ts
+                                                              . (fleEndTime .~ Just endTs) -- don't go all the way to the end, to minimize skips
 
-                                    followResultsSince nextTs -- keep searching
+                                    followResultsSince (endTs+1) -- keep searching
 
     latestTs <- processResults fle
 
