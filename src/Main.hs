@@ -115,6 +115,11 @@ main = do
 
 tailAWSLogs:: App -> IO ()
 tailAWSLogs App{..} = do
+
+  if appFollow && (isJust appEndTime)
+  then error $ "-f (follow) conflicts with -E (end time)"
+  else return ()
+
   r <- case fromText (T.pack appRegion)
          of Left e -> error e
             Right r' -> return r'
@@ -155,27 +160,26 @@ tailAWSLogs App{..} = do
     -- paginate results, return latest event timestamp
     let  processResults fle' = paginate fle'
                                  =$= CL.concatMap (view flersEvents)
-                                 $$ (flip CL.foldM) 0 $ \maxTs e -> do (liftIO . printResults) e
-                                                                       return $ max maxTs (maybe 0 id (e ^. fleTimestamp))
+                                 $$ CL.mapM_ (liftIO . printResults)
 
-         delaySecs = 10 -- 5 to accumulate more events and 5 to let them sync up to CWL
+         -- 5 to accumulate more events and 5 to let them sync up to CWL
+         delaySecs = 10
+
+         -- stop a few sec before current time, to give CW Logs agent time to send logs to service
+         nextEndTs = do currentTime <- liftIO $ getCurrentTime
+                        return $ (utcToNat currentTime) - (fromInteger . toInteger) (delaySecs * 1000 `div` 2)
 
          followResultsSince ts = do liftIO $ CC.threadDelay $ delaySecs * 1000000
-                                    let endTs = ts + (fromInteger . toInteger) (delaySecs * 1000 `div` 2)
+                                    endTs <- nextEndTs
                                     liftIO $ hPutStrLn stderr $ "Searching for more events [" <> formatTimestamp ts <> " .. " <> formatTimestamp endTs <> "]"
-                                    _ <- processResults $ fle & (fleStartTime .~ Just ts) -- start from latest event ts
-                                                              . (fleEndTime .~ Just endTs) -- don't go all the way to the end, to minimize skips
+                                    _ <- processResults $ fle & (fleStartTime .~ Just ts)
+                                                              . (fleEndTime .~ Just endTs)
 
                                     followResultsSince (endTs+1) -- keep searching
 
-    latestTs <- processResults fle
-
     if appFollow
-         -- this may skip some events that had same timestamp but haven't
-         -- synced up yet, when we follow we give it a bit of a buffer time
-         -- but 1st time is lossy
-    then followResultsSince (latestTs + 1)
-    else return ()
+    then followResultsSince (utcToNat startTime)
+    else processResults fle
 
 
 -- | Text output
