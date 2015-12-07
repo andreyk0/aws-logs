@@ -6,32 +6,35 @@
 module Main where
 
 
+import qualified Control.Concurrent as CC
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.AWS
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy as L
 import           Data.Conduit
+import qualified Data.Conduit.List as CL
+import qualified Data.List as DL
+import qualified Data.List.NonEmpty as NEL
 import           Data.Maybe
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import           Data.Time.Clock
 import           Data.Time.Clock.POSIX
 import           Data.Time.Format
+import           Network.AWS.Auth(credFile)
 import           Network.AWS.CloudWatchLogs
 import           Network.AWS.Data
 import           Numeric.Natural
 import           Options.Applicative as OA
+import           System.Environment(lookupEnv)
 import           System.IO
-import qualified Control.Concurrent as CC
-import qualified Data.Aeson as A
-import qualified Data.ByteString.Lazy as L
-import qualified Data.Conduit.List as CL
-import qualified Data.List as DL
-import qualified Data.List.NonEmpty as NEL
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 
 
 data App =
   App { appRegion:: String
+      , appAwsProfile:: Maybe String
       , appLogGroupName:: String
       , appLogStreamNames:: [String]
       , appOutputFormat:: String
@@ -63,6 +66,10 @@ parseApp defaultStartTime = App
         <> value "us-east-1"
         <> showDefault
         <> help "AWS Region" )
+     <*> (optional $ strOption
+         ( long "profile"
+        <> short 'p'
+        <> help "AWS Profile" ))
      <*> strOption
          ( long "log-group-name"
         <> short 'g'
@@ -134,7 +141,17 @@ tailAWSLogs App{..} = do
                        x      -> error $ "Unsupported output format " <> x
 
   lgr <- newLogger logLevel stdout
-  env <- (newEnv r Discover) <&> (envLogger .~ lgr)
+
+  let profSectionFromFile s = do credF <- credFile
+                                 return $ FromFile (T.pack s) credF
+
+  awsEnvProfile <- lookupEnv "AWS_DEFAULT_PROFILE"
+  credsFrom <- (head . catMaybes) [ profSectionFromFile <$> appAwsProfile
+                                  , profSectionFromFile <$> awsEnvProfile
+                                  , Just (return Discover)
+                                  ]
+
+  env <- (newEnv r credsFrom) <&> (envLogger .~ lgr)
 
   startTime <- case parseUTCTime appStartTime
                  of Left e -> error $ "Unable to parse start time " <> e
