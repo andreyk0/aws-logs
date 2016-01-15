@@ -145,9 +145,11 @@ tailAWSLogs App{..} = do
   let profSectionFromFile s = do credF <- credFile
                                  return $ FromFile (T.pack s) credF
 
-  awsEnvProfile <- lookupEnv "AWS_DEFAULT_PROFILE"
+  awsEnvDefaultProfile <- lookupEnv "AWS_DEFAULT_PROFILE" -- older convention
+  awsEnvProfile <- lookupEnv "AWS_PROFILE" -- newer convention
   credsFrom <- (head . catMaybes) [ profSectionFromFile <$> appAwsProfile
                                   , profSectionFromFile <$> awsEnvProfile
+                                  , profSectionFromFile <$> awsEnvDefaultProfile
                                   , Just (return Discover)
                                   ]
 
