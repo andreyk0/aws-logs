@@ -23,3 +23,9 @@ aws-logs
                                http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html
 
     E.g. aws-logs -g my-log-group '"da240fb2-9b9d-4b80-bac2-f3452e937919"'
+    
+    
+Run binary
+============
+
+Binary is published to a [Docker hub repo](https://hub.docker.com/r/andreyk0/aws-logs/), it can be executed with [this script](aws-logs).
