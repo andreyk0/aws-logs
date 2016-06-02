@@ -11,7 +11,7 @@ rootfs.tar:
 	tar cvf $@ --exclude private /etc/ssl
 
 tags:
-	hasktags -R -x -c .sources src
+	hasktags-generate .sources
 
 clean:
 	rm -f rootfs.tar
