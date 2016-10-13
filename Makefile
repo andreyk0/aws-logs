@@ -8,7 +8,7 @@ publish-image: build-image
 	docker push andreyk0/aws-logs:latest
 
 rootfs.tar:
-	tar cvf $@ --exclude private /etc/ssl
+	tar cvf $@ --exclude private /etc/ssl /lib/x86_64-linux-gnu/libgcc_s.so.1
 
 tags:
 	hasktags-generate .sources
