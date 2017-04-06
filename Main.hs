@@ -19,6 +19,7 @@ import qualified Data.Conduit.List as CL
 import qualified Data.List as DL
 import qualified Data.List.NonEmpty as NEL
 import           Data.Maybe
+import           Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as TIO
@@ -169,7 +170,7 @@ tailAWSLogs App{..} = do
                                   , Just (return Discover)
                                   ]
 
-  env <- (newEnv r credsFrom) <&> (envLogger .~ lgr)
+  env <- (newEnv credsFrom) <&> (envLogger .~ lgr) . (envRegion .~ r)
 
   startTime <- case parseUTCTime appStartTime
                  of Left e -> error $ "Unable to parse start time " <> e
