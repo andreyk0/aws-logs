@@ -1,20 +1,34 @@
+TARGET=target
+EXE=$(TARGET)/aws-logs
+DIST_EXE=$(EXE)-$(shell uname -s)-$(shell uname -m)
+DIST_EXE_SIG=$(DIST_EXE).sig
+
 build:
-	stack build
+	stack build aws-logs
 
-build-image: build rootfs.tar
-	docker build -t andreyk0/aws-logs:latest .
+build-prof:
+	stack build --profile --ghc-options="-rtsopts" aws-logs
 
-publish-image: build-image
-	docker push andreyk0/aws-logs:latest
+install:
+	stack install aws-logs
 
-rootfs.tar:
-	tar cvf $@ --exclude private /etc/ssl /lib/x86_64-linux-gnu/libgcc_s.so.1
-
-tags:
-	hasktags-generate .sources
+bindist:
+	mkdir -p $(TARGET)
+	stack --local-bin-path $(TARGET) install $(STACK_INSTALL_OPTS) aws-logs
+	upx --best $(EXE)
+	mv $(EXE) $(DIST_EXE)
+	gpg --output $(DIST_EXE_SIG) --detach-sign $(DIST_EXE)
 
 clean:
-	rm -f rootfs.tar
 	stack clean
+	rm -rf target
 
-.PHONY: build tags clean
+tags:
+	hasktags-generate .
+
+sources:
+	stack-unpack-dependencies
+
+
+.PHONY: build build-prof clean tags sources
+
