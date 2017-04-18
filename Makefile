@@ -14,7 +14,7 @@ install:
 
 bindist:
 	mkdir -p $(TARGET)
-	stack --local-bin-path $(TARGET) install $(STACK_INSTALL_OPTS) aws-logs
+	stack --local-bin-path $(TARGET) install $(STACK_OPTS) aws-logs
 	upx --best $(EXE)
 	mv $(EXE) $(DIST_EXE)
 	gpg --output $(DIST_EXE_SIG) --detach-sign $(DIST_EXE)
