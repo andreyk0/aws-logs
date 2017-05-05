@@ -132,8 +132,8 @@ runAWSCmd appA awsa@ArgsAWS{..} awsc = do
                  of Left e -> error e
                     Right r' -> return r'
 
-  env <- (newEnv credsFrom) <&>
-           (if argVerbose then (envLogger .~ awsLogger) else id) .
+  env <- newEnv credsFrom <&>
+           (if argVerbose then envLogger .~ awsLogger else id) .
            (envRegion .~ awsRegion)
 
   let maybeQLogArgs = case awsc
@@ -151,9 +151,9 @@ runAWSCmd appA awsa@ArgsAWS{..} awsc = do
                                           then printLogEventText
                                           else printLogMessageText
 
-      appState = (AppState env awsa awsc resultsPrinter)
+      appState = AppState env awsa awsc resultsPrinter
 
-      logLevelFilter _ ll = if argVerbose then True else (ll >= LevelInfo)
+      logLevelFilter _ ll = argVerbose || (ll >= LevelInfo)
 
   runStderrLoggingT $ filterLogger logLevelFilter $
     runResourceT $ runAWST appState $ runReaderT (unApp appA) appState

@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 
 module TimeUtil (
   formatTimestamp
@@ -29,12 +28,12 @@ iso8601FmtStr = iso8601DateFormat (Just "%H:%M:%S%Z")
 
 utcToNat :: UTCTime
          -> Natural
-utcToNat t = (fromInteger . round) $ (toRational (utcTimeToPOSIXSeconds t)) * 1000
+utcToNat t = (fromInteger . round) $ toRational (utcTimeToPOSIXSeconds t) * 1000
 
 
 natToUTC :: Natural
          -> UTCTime
-natToUTC n = posixSecondsToUTCTime $ ((fromInteger . toInteger) n) / 1000
+natToUTC n = posixSecondsToUTCTime $ (fromInteger . toInteger) n / 1000
 
 
 formatTimestamp :: Natural
@@ -59,7 +58,7 @@ parseUTCTime currentTz s =
                            return $ zonedTimeToUTC t
 
         parseLocalFmt = do t <- parseAny localTimeFormats
-                           return $ zonedTimeToUTC $ (t { zonedTimeZone = currentTz })
+                           return $ zonedTimeToUTC $ t { zonedTimeZone = currentTz }
 
         parseAny fmts = listToMaybe $ catMaybes $ (\fmt -> parseTimeM False defaultTimeLocale fmt s) <$> fmts
 
@@ -80,5 +79,5 @@ nextQueryEndTimestamp :: (MonadIO m)
                       => Int -- ^ seconds before now
                       -> m Natural
 nextQueryEndTimestamp secBeforeNow = do
-  currentTime <- liftIO $ getCurrentTime
-  return $ (utcToNat currentTime) - (fromInteger . toInteger) (secBeforeNow * 1000)
+  currentTime <- liftIO getCurrentTime
+  return $ utcToNat currentTime - (fromInteger . toInteger) (secBeforeNow * 1000)

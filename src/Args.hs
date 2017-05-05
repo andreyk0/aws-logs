@@ -1,6 +1,4 @@
-{-# LANGUAGE BangPatterns     #-}
 {-# LANGUAGE RecordWildCards  #-}
-{-# LANGUAGE TemplateHaskell  #-}
 
 module Args (
   ArgsAWS(..)
@@ -80,13 +78,13 @@ parseCLICmdAWS :: CliParserDefaults
                -> Parser CLICmd
 parseCLICmdAWS cpd = CLICmdAWS
   <$> parseArgsAWS
-  <*> (parseAWSCmd cpd)
+  <*> parseAWSCmd cpd
 
 
 parseAWSCmd :: CliParserDefaults
             -> Parser AWSCmd
 parseAWSCmd cpd =
-  parseCmdListStreams <|> parseCmdListLogGroups <|> (parseCmdQueryLogs cpd)
+  parseCmdListStreams <|> parseCmdListLogGroups <|> parseCmdQueryLogs cpd
 
 
 parseCmdListLogGroups :: Parser AWSCmd
@@ -136,7 +134,7 @@ parseArgsAWS = ArgsAWS
      <> value "us-east-1"
      <> showDefault
      <> help "AWS Region" )
-  <*> (optional $ strOption
+  <*> optional (strOption
       ( long "profile"
      <> short 'p'
      <> help "AWS Profile" ))
@@ -149,7 +147,7 @@ parseArgsQueryLogs CliParserDefaults{..} = ArgsQueryLogs
       ( long "log-group-name"
      <> short 'g'
      <> help "CWL log group name" )
-  <*> ( many $ strOption
+  <*>  many (strOption
       ( long "log-stream-name"
      <> short 's'
      <> help "CWL log stream name, can be given multiple times" ))
@@ -165,7 +163,7 @@ parseArgsQueryLogs CliParserDefaults{..} = ArgsQueryLogs
      <> value defaultStartTime
      <> showDefaultWith formatUTCTime
      <> help "Start time" )
-  <*> (optional $ option (parseTimeArgument currentTimeZone)
+  <*> optional (option (parseTimeArgument currentTimeZone)
       ( long "end-time"
      <> short 'E'
      <> help "End time" ))
@@ -183,7 +181,7 @@ parseArgsQueryLogs CliParserDefaults{..} = ArgsQueryLogs
       ( long "include-event-metadata"
      <> short 'm'
      <> help "Include event metadata in the output" )
-  <*> (optional $ OA.argument str
+  <*> optional (OA.argument str
       ( metavar "CWL filter pattern"
      <> help "E.g. '\"some-pattern\"'" ))
 
@@ -192,7 +190,7 @@ parseCLICmd :: IO CLICmd
 parseCLICmd = do
   currentTime <- getCurrentTime
   currentTz <- getCurrentTimeZone
-  let defaultStartTime = addUTCTime (- (fromInteger 60)) currentTime -- look 1 min back
+  let defaultStartTime = addUTCTime (- 60) currentTime -- look 1 min back
 
       cpd = CliParserDefaults defaultStartTime currentTz
       opts = info (helper <*> (parseCmdVersion <|> parseCLICmdAWS cpd))
@@ -202,18 +200,23 @@ parseCLICmd = do
 
   execParser opts
 
-  where progDescDoc' = (PP.text "Filter pattern syntax documentation: http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html")
+  where progDescDoc' =
+          PP.text "Filter pattern syntax documentation: http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html"
           PP.<+> PP.linebreak
-          PP.<$> (PP.text "Search for a UUID:")
-          PP.<$> (PP.indent 2 $ PP.text "aws-logs -g my-log-group '\"da240fb2-9b9d-4b80-bac2-f3452e937919\"'")
+          PP.<$> PP.text "Search for a UUID:"
+          PP.<$> PP.indent 2
+                   (PP.text "aws-logs -g my-log-group '\"da240fb2-9b9d-4b80-bac2-f3452e937919\"'")
           PP.<+> PP.linebreak
-          PP.<$> (PP.text "Search JSON logs for ERRORs:")
-          PP.<$> (PP.indent 2 $ PP.text "aws-logs -g my-log-group '{$.level = \"ERROR\"}'" )
+          PP.<$> PP.text "Search JSON logs for ERRORs:"
+          PP.<$> PP.indent 2
+                   (PP.text "aws-logs -g my-log-group '{$.level = \"ERROR\"}'")
           PP.<+> PP.linebreak
-          PP.<$> (PP.text "List available log groups:")
-          PP.<$> (PP.indent 2 $ PP.text "aws-logs -l" )
+          PP.<$> PP.text "List available log groups:"
+          PP.<$> PP.indent 2
+                   (PP.text "aws-logs -l" )
           PP.<+> PP.linebreak
-          PP.<$> (PP.text "List available streams in a log group:")
-          PP.<$> (PP.indent 2 $ PP.text "aws-logs -L my-log-group" )
+          PP.<$> PP.text "List available streams in a log group:"
+          PP.<$> PP.indent 2
+                   (PP.text "aws-logs -L my-log-group")
           PP.<+> PP.linebreak
-          PP.<$> (PP.text "For JSON filtering/formatting please pipe output to 'jq' (https://stedolan.github.io/jq/manual/)")
+          PP.<$> PP.text "For JSON filtering/formatting please pipe output to 'jq' (https://stedolan.github.io/jq/manual/)"

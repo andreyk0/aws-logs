@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
+
 
 module OutputPrinter (
   OutputPrinter
@@ -16,7 +16,6 @@ import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
-import qualified Data.List as DL
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text as T
@@ -35,7 +34,7 @@ instance A.ToJSON FilteredLogEvent where
     (catMaybes
       [ (("IngestionTime" A..=) . formatTimestamp) <$> ( e ^. fleIngestionTime )
       , ("LogStreamName"  A..=)                    <$> ( e ^. fleLogStreamName )
-      , ("Message"        A..=)                    <$> ( messageJSONValue e    )
+      , ("Message"        A..=)                    <$> messageJSONValue e
       , (("Timestamp"     A..=) . formatTimestamp) <$> ( e ^. fleTimestamp     )
       , ("EventId"        A..=)                    <$> ( e ^. fleEventId       )
       ])
@@ -49,8 +48,8 @@ printLogEventText e = liftIO $ do
                             ]
       message = e ^. fleMessage
 
-  putStr $ "[" <> (concat $ DL.intersperse " " msgHeader) <> "] "
-  forM_ message (TIO.putStrLn)
+  putStr $ "[" <> unwords msgHeader <> "] "
+  forM_ message TIO.putStrLn
 
 
 -- | Message only, no event metadata

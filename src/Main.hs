@@ -43,8 +43,8 @@ listLogGroups = do
   let dlg = describeLogGroups
   paginate dlg =$= CL.concatMap (view dlgrsLogGroups)
                =$= CL.map (view lgLogGroupName)
-               =$= CL.filter (isJust)
-               =$= CL.map (fromJust)
+               =$= CL.filter isJust
+               =$= CL.map fromJust
                $$ CL.mapM_ (liftIO . TIO.putStrLn)
 
 
@@ -54,8 +54,8 @@ listLogStreams g = do
   let dls = describeLogStreams (T.pack g)
   paginate dls =$= CL.concatMap (view dlsrsLogStreams)
                =$= CL.map (view lsLogStreamName)
-               =$= CL.filter (isJust)
-               =$= CL.map (fromJust)
+               =$= CL.filter isJust
+               =$= CL.map fromJust
                $$ CL.mapM_ (liftIO . TIO.putStrLn)
 
 
@@ -63,11 +63,11 @@ queryLogs :: ArgsQueryLogs
           -> App ()
 queryLogs ArgsQueryLogs{..} = do
 
-  when (argFollow && (isJust argEndTime)) $ error $ "-f (follow) conflicts with -E (end time)"
+  when (argFollow && isJust argEndTime) $ error "-f (follow) conflicts with -E (end time)"
   when (argFollowDelaySeconds < 1) $ error "Log follow delay must be >= 1 seconds"
 
 
-  let logStreamNames = if (DL.null argLogStreamNames)
+  let logStreamNames = if DL.null argLogStreamNames
                        then Nothing
                        else Just $ NEL.fromList $ T.pack <$> argLogStreamNames
 
@@ -84,7 +84,7 @@ queryLogs ArgsQueryLogs{..} = do
 
 
       followResultsSince ts = do
-        $(logInfo) $ "Sleeping for " <> (tshow argFollowDelaySeconds) <> " seconds ..."
+        $(logInfo) $ "Sleeping for " <> tshow argFollowDelaySeconds <> " seconds ..."
         liftIO $ CC.threadDelay $ argFollowDelaySeconds * 1000000
 
         endTs <- nextQueryEndTimestamp argFollowDelaySeconds
