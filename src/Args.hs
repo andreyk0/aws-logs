@@ -14,6 +14,7 @@ module Args (
 
 import           Data.Monoid
 import           Data.Time.Clock
+import           Data.Time.LocalTime
 import           Options.Applicative as OA
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
 import           TimeUtil
@@ -63,6 +64,7 @@ data ArgsQueryLogs
 -- | default values that require IO actions to get
 data CliParserDefaults
   = CliParserDefaults { defaultStartTime :: !UTCTime -- ^ default log query start time
+                      , currentTimeZone :: !TimeZone -- ^ current time zone
                       } deriving (Eq, Show)
 
 
@@ -117,8 +119,9 @@ parseOutputFormat = eitherReader $ \s ->
        x      -> Left $ "Failed to parse output format from " <> x <> ", expected 'json' or 'text'"
 
 
-parseTimeArgument :: ReadM UTCTime
-parseTimeArgument = eitherReader parseUTCTime
+parseTimeArgument :: TimeZone
+                  -> ReadM UTCTime
+parseTimeArgument currentTz = eitherReader (parseUTCTime currentTz)
 
 
 parseArgsAWS :: Parser ArgsAWS
@@ -156,13 +159,13 @@ parseArgsQueryLogs CliParserDefaults{..} = ArgsQueryLogs
      <> value TextOutput
      <> showDefaultWith (\TextOutput -> "text")
      <> help "Output format [text|json]" )
-  <*> option parseTimeArgument
+  <*> option (parseTimeArgument currentTimeZone)
       ( long "start-time"
      <> short 'S'
      <> value defaultStartTime
      <> showDefaultWith formatUTCTime
      <> help "Start time" )
-  <*> (optional $ option parseTimeArgument
+  <*> (optional $ option (parseTimeArgument currentTimeZone)
       ( long "end-time"
      <> short 'E'
      <> help "End time" ))
@@ -188,9 +191,10 @@ parseArgsQueryLogs CliParserDefaults{..} = ArgsQueryLogs
 parseCLICmd :: IO CLICmd
 parseCLICmd = do
   currentTime <- getCurrentTime
+  currentTz <- getCurrentTimeZone
   let defaultStartTime = addUTCTime (- (fromInteger 60)) currentTime -- look 1 min back
 
-      cpd = CliParserDefaults defaultStartTime
+      cpd = CliParserDefaults defaultStartTime currentTz
       opts = info (helper <*> (parseCmdVersion <|> parseCLICmdAWS cpd))
              ( fullDesc
             <> header "Tail-like utility for Cloud Watch Logs."
