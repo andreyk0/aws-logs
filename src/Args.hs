@@ -13,9 +13,9 @@ module Args (
 import           Data.Monoid
 import           Data.Time.Clock
 import           Data.Time.LocalTime
+import           Data.Time.Parse
 import           Options.Applicative as OA
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
-import           TimeUtil
 
 
 -- | Top-level command
@@ -62,8 +62,8 @@ data ArgsQueryLogs
 -- | default values that require IO actions to get
 data CliParserDefaults
   = CliParserDefaults { defaultStartTime :: !UTCTime -- ^ default log query start time
-                      , currentTimeZone :: !TimeZone -- ^ current time zone
-                      } deriving (Eq, Show)
+                      , parseTimeArgument :: ReadM UTCTime
+                      }
 
 
 parseCmdVersion :: Parser CLICmd
@@ -117,10 +117,6 @@ parseOutputFormat = eitherReader $ \s ->
        x      -> Left $ "Failed to parse output format from " <> x <> ", expected 'json' or 'text'"
 
 
-parseTimeArgument :: TimeZone
-                  -> ReadM UTCTime
-parseTimeArgument currentTz = eitherReader (parseUTCTime currentTz)
-
 
 parseArgsAWS :: Parser ArgsAWS
 parseArgsAWS = ArgsAWS
@@ -157,13 +153,13 @@ parseArgsQueryLogs CliParserDefaults{..} = ArgsQueryLogs
      <> value TextOutput
      <> showDefaultWith (\TextOutput -> "text")
      <> help "Output format [text|json]" )
-  <*> option (parseTimeArgument currentTimeZone)
+  <*> option parseTimeArgument
       ( long "start-time"
      <> short 'S'
      <> value defaultStartTime
-     <> showDefaultWith formatUTCTime
+     <> showDefaultWith formatIso8601DateTime
      <> help "Start time" )
-  <*> optional (option (parseTimeArgument currentTimeZone)
+  <*> optional (option parseTimeArgument
       ( long "end-time"
      <> short 'E'
      <> help "End time" ))
@@ -192,7 +188,11 @@ parseCLICmd = do
   currentTz <- getCurrentTimeZone
   let defaultStartTime = addUTCTime (- 60) currentTime -- look 1 min back
 
-      cpd = CliParserDefaults defaultStartTime currentTz
+      parseTs = eitherReader $ \s -> case parseUTCTimeTzT currentTz currentTime s
+                                       of Nothing -> Left $ "can't parse time " <> s
+                                          Just t -> Right t
+
+      cpd = CliParserDefaults defaultStartTime parseTs
       opts = info (helper <*> (parseCmdVersion <|> parseCLICmdAWS cpd))
              ( fullDesc
             <> header "Tail-like utility for Cloud Watch Logs."
@@ -220,3 +220,8 @@ parseCLICmd = do
                    (PP.text "aws-logs -L my-log-group")
           PP.<+> PP.linebreak
           PP.<$> PP.text "For JSON filtering/formatting please pipe output to 'jq' (https://stedolan.github.io/jq/manual/)"
+          PP.<+> PP.linebreak
+          PP.<$> PP.text ("Start/end time parameters support these formats: " <> show allSupportedDateTimeFormats)
+          PP.<+> PP.linebreak
+          PP.<$> PP.indent 2
+                   (PP.text "E.g. [-S -15m] -- start from 15 min ago ")

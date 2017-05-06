@@ -42,6 +42,7 @@ executable aws-logs
                      , mtl
                      , old-locale
                      , optparse-applicative
+                     , parse-time
                      , resourcet
                      , semigroups
                      , text
