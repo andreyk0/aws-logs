@@ -223,5 +223,11 @@ parseCLICmd = do
           PP.<+> PP.linebreak
           PP.<$> PP.text ("Start/end time parameters support these formats: " <> show allSupportedDateTimeFormats)
           PP.<+> PP.linebreak
+          PP.<$> PP.text "Some examples:"
           PP.<$> PP.indent 2
-                   (PP.text "E.g. [-S -15m] -- start from 15 min ago ")
+                   (PP.text "aws-logs -g my-log-group -S -15m # start from 15 min ago"
+                    PP.<+> PP.linebreak
+                    PP.<$> PP.text "aws-logs -g my-log-group -S 12:00 # start from noon local time"
+                    PP.<+> PP.linebreak
+                    PP.<$> PP.text "aws-logs -g my-log-group -S 2222-01-02T03:04:05UTC # start from a UTC timestamp"
+                   )

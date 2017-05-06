@@ -24,7 +24,7 @@ Available options:
   -g,--log-group-name ARG  CWL log group name
   -s,--log-stream-name ARG CWL log stream name, can be given multiple times
   -F,--output-format ARG   Output format [text|json] (default: text)
-  -S,--start-time ARG      Start time (default: 2017-05-06T04:37:56UTC)
+  -S,--start-time ARG      Start time (default: 2017-05-06T15:16:49UTC)
   -E,--end-time ARG        End time
   -f,--follow              Keep looking for more results. N.B. this can skip
                            over some events
@@ -53,5 +53,10 @@ For JSON filtering/formatting please pipe output to 'jq' (https://stedolan.githu
 
 Start/end time parameters support these formats: ["%Y-%m-%dT%H:%M:%S%Z","%Y-%m-%dT%H:%M%Z","%Y-%m-%dT%H%Z","%Y-%m-%d%Z","%Y-%m-%dT%H:%M:%S","%Y-%m-%dT%H:%M","%Y-%m-%dT%H","%Y-%m-%d","%H:%M:%S","%H:%M","Nm","Nh","Nd"]
 
-  E.g. [-S -15m] -- start from 15 min ago
+Some examples:
+  aws-logs -g my-log-group -S -15m # start from 15 min ago
+
+  aws-logs -g my-log-group -S 12:00 # start from noon local time
+
+  aws-logs -g my-log-group -S 2222-01-02T03:04:05UTC # start from a UTC timestamp
 ```
