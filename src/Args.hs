@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE RecordWildCards  #-}
 
 module Args (
@@ -110,11 +111,11 @@ parseCmdQueryLogs cpd = CmdQueryLogs <$> parseArgsQueryLogs cpd
 
 
 parseOutputFormat :: ReadM OutputFormat
-parseOutputFormat = eitherReader $ \s ->
-  case s
-    of "json" -> Right JSONOutput
-       "text" -> Right TextOutput
-       x      -> Left $ "Failed to parse output format from " <> x <> ", expected 'json' or 'text'"
+parseOutputFormat = eitherReader $
+  \case
+    "json" -> Right JSONOutput
+    "text" -> Right TextOutput
+    x      -> Left $ "Failed to parse output format from " <> x <> ", expected 'json' or 'text'"
 
 
 
@@ -188,7 +189,7 @@ parseCLICmd = do
   currentTz <- getCurrentTimeZone
   let defaultStartTime = addUTCTime (- 60) currentTime -- look 1 min back
 
-      parseTs = eitherReader $ \s -> case parseUTCTimeTzT currentTz currentTime s
+      parseTs = eitherReader $ \s -> case parseUTCTimeTzT True currentTz currentTime s
                                        of Nothing -> Left $ "can't parse time " <> s
                                           Just t -> Right t
 
