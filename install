@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# A helper script to download / install binary
+
+set -e
+
+DL=https://github.com/andreyk0/aws-logs/releases/download/v1.4
+DL_BIN=$DL/aws-logs-$(uname -s)-$(uname -m)
+TARGET=/usr/local/bin/aws-logs
+
+echo "Downloading binary from $DL_BIN ..."
+echo "You may be prompted for your local unix password by sudo"
+sudo curl -L -o $TARGET $DL_BIN
+
+curl -L -o /tmp/aws-logs.sig $DL_BIN.sig
+
+if (type gpg2) ; then
+  GPG=gpg2
+elif (type gpg) ; then
+  GPG=gpg
+fi
+
+# Expects gnupg2.x
+if [ -z "$GPG" ] ; then
+  echo "GPG is not found on this system, continuing without signature verification, it's a good idea to install GPG and re-run the install script"
+else
+  echo "Using $(which $GPG)"
+
+  echo "Verifying signature ..."
+  $GPG --list-keys 81D36A78EEBDAABF9909CBF5D29DD5BF0A0D164A || $GPG --import <<_K_
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+that/7dTAWFG0kf6rVqf7je5EQ==
+=9z+G
+-----END PGP PUBLIC KEY BLOCK-----
+_K_
+
+  $GPG --verify /tmp/aws-logs.sig $TARGET || {
+    echo "GPG signature check failed!";
+    rm -f $TARGET
+    exit 1;
+  }
+fi
+
+echo "Making downloaded binary executable ..."
+echo "You may be prompted for your local unix password by sudo"
+sudo chmod 755 $TARGET
+
+echo
+echo
+echo "Installed $TARGET"
+echo "Please make sure it's in your shell PATH"
+echo

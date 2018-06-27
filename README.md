@@ -1,5 +1,13 @@
-aws-logs
-========
+# aws-logs (Query AWS CloudWatch logs from the command line)
+
+
+# Install
+
+```bash
+curl -L https://raw.githubusercontent.com/andreyk0/aws-logs/master/install | /bin/bash
+```
+
+# CLI
 
 ```
 Tail-like utility for Cloud Watch Logs.
