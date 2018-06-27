@@ -1,5 +1,6 @@
-# aws-logs (Query AWS CloudWatch logs from the command line)
+# aws-logs
 
+Query AWS CloudWatch logs from the command line
 
 # Install
 
