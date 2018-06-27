@@ -11,7 +11,6 @@ module Args (
 ) where
 
 
-import           Data.Monoid
 import           Data.Time.Clock
 import           Data.Time.LocalTime
 import           Data.Time.Parse

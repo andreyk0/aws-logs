@@ -20,7 +20,6 @@ import qualified Data.Conduit.List as CL
 import qualified Data.List as DL
 import qualified Data.List.NonEmpty as NEL
 import           Data.Maybe
-import           Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import           Network.AWS.CloudWatchLogs
@@ -39,24 +38,24 @@ main = runApp $ do
 
 
 listLogGroups :: App ()
-listLogGroups = do
-  let dlg = describeLogGroups
-  paginate dlg =$= CL.concatMap (view dlgrsLogGroups)
-               =$= CL.map (view lgLogGroupName)
-               =$= CL.filter isJust
-               =$= CL.map fromJust
-               $$ CL.mapM_ (liftIO . TIO.putStrLn)
+listLogGroups = runConduit $
+  paginate describeLogGroups
+    .| CL.concatMap (view dlgrsLogGroups)
+    .| CL.map (view lgLogGroupName)
+    .| CL.filter isJust
+    .| CL.map fromJust
+    .| CL.mapM_ (liftIO . TIO.putStrLn)
 
 
 listLogStreams :: String
                -> App ()
-listLogStreams g = do
-  let dls = describeLogStreams (T.pack g)
-  paginate dls =$= CL.concatMap (view dlsrsLogStreams)
-               =$= CL.map (view lsLogStreamName)
-               =$= CL.filter isJust
-               =$= CL.map fromJust
-               $$ CL.mapM_ (liftIO . TIO.putStrLn)
+listLogStreams g = runConduit $
+  paginate (describeLogStreams (T.pack g))
+    .| CL.concatMap (view dlsrsLogStreams)
+    .| CL.map (view lsLogStreamName)
+    .| CL.filter isJust
+    .| CL.map fromJust
+    .| CL.mapM_ (liftIO . TIO.putStrLn)
 
 
 queryLogs :: ArgsQueryLogs
@@ -75,12 +74,12 @@ queryLogs ArgsQueryLogs{..} = do
       fle = filterLogEvents (T.pack argLogGroupName)
               & (fleFilterPattern .~ (T.pack <$> argFilterPattern))
               . (fleLogStreamNames .~ logStreamNames)
-              . (fleStartTime .~ Just (utcToNat argStartTime))
+              . (fleStartTime ?~ utcToNat argStartTime)
               . (fleEndTime .~ (utcToNat <$> argEndTime))
 
 
-      processResults fle' =
-        paginate fle' =$= CL.concatMap (view flersEvents) $$ CL.mapM_ printOutput
+      processResults fle' = runConduit $
+        paginate fle' .| CL.concatMap (view flersEvents) .| CL.mapM_ printOutput
 
 
       followResultsSince ts = do
@@ -92,8 +91,8 @@ queryLogs ArgsQueryLogs{..} = do
         $(logInfo) $ "Searching for more events " <> (T.pack . formatTimestamp) ts <>
                      " .. " <> (T.pack . formatTimestamp) endTs
 
-        _ <- processResults $ fle & (fleStartTime .~ Just ts) .
-                                    (fleEndTime .~ Just endTs)
+        _ <- processResults $ fle & (fleStartTime ?~ ts) .
+                                    (fleEndTime ?~ endTs)
 
         followResultsSince (endTs+1) -- keep searching
 

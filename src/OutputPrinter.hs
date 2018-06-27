@@ -17,7 +17,6 @@ import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Maybe
-import           Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as TIO
@@ -32,11 +31,11 @@ type OutputPrinter = forall m . (MonadIO m) => FilteredLogEvent -> m ()
 instance A.ToJSON FilteredLogEvent where
   toJSON e = A.object
     (catMaybes
-      [ (("IngestionTime" A..=) . formatTimestamp) <$> ( e ^. fleIngestionTime )
-      , ("LogStreamName"  A..=)                    <$> ( e ^. fleLogStreamName )
-      , ("Message"        A..=)                    <$> messageJSONValue e
-      , (("Timestamp"     A..=) . formatTimestamp) <$> ( e ^. fleTimestamp     )
-      , ("EventId"        A..=)                    <$> ( e ^. fleEventId       )
+      [ ("IngestionTime" A..=) . formatTimestamp <$> ( e ^. fleIngestionTime )
+      , ("LogStreamName" A..=)                   <$> ( e ^. fleLogStreamName )
+      , ("Message"       A..=)                   <$> messageJSONValue e
+      , ("Timestamp"     A..=) . formatTimestamp <$> ( e ^. fleTimestamp     )
+      , ("EventId"       A..=)                   <$> ( e ^. fleEventId       )
       ])
 
 

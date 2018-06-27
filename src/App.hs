@@ -18,7 +18,6 @@ module App (
 
 import           Args
 import           Control.Lens
-import           Control.Monad.Base
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
@@ -27,7 +26,6 @@ import           Control.Monad.Trans.AWS
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Resource
 import           Data.Maybe
-import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Development.GitRev
@@ -53,7 +51,6 @@ newtype App a =
       } deriving ( Applicative
                  , Functor
                  , Monad
-                 , MonadBase IO
                  , MonadCatch
                  , MonadIO
                  , MonadLogger
@@ -118,8 +115,7 @@ runAWSCmd appA awsa@ArgsAWS{..} awsc = do
 
   awsEnvProfile <- lookupEnv "AWS_PROFILE"
 
-  let profSectionFromFile s = do credF <- credFile
-                                 return $ FromFile (T.pack s) credF
+  let profSectionFromFile s = FromFile (T.pack s) <$> credFile
 
   credsFrom <- (head . catMaybes) [ profSectionFromFile <$> argAWSProfile
                                   , profSectionFromFile <$> awsEnvProfile

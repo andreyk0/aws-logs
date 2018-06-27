@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module TimeUtil (
   formatTimestamp
 , natToUTC
